@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [
     react()
   ],
+  base: '/PulseChain-Safe-HEX-Stake-Rescue/',
   optimizeDeps: { include: ['viem'] },
   preview: {
     allowedHosts: true,
