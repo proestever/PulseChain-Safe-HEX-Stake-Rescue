@@ -254,7 +254,8 @@ export function SafeStakeList({
                                 backgroundColor: isStakeTermDone ? "success.dark" : "warning.dark",
                               },
                               fontWeight: !isStakeTermDone ? "bold" : "normal",
-                              border: !isStakeTermDone ? "1px solid #ff0000" : "none",
+                              border: !isStakeTermDone ? "1px solid" : "none",
+                              borderColor: !isStakeTermDone ? "error.main" : "transparent",
                             }}
                           >
                             {isStakeTermDone ? "END" : "EES"}
