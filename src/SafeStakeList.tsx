@@ -10,7 +10,13 @@ import {
   TableRow,
   TableCell,
   Button,
+  Dialog,
+  DialogContent,
+  DialogActions,
+  Box,
+  Stack,
 } from "@mui/material";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { parseAbi, encodeFunctionData, zeroAddress, type PublicClient, formatUnits } from "viem";
 import { HEX_ADDRESS } from "./constants";
 
@@ -157,6 +163,7 @@ export function SafeStakeList({
   safeAddress: `0x${string}`;
 }) {
   const publicClient = usePublicClient();
+  const [eesWarning, setEesWarning] = useState<{ stakeIndex: number; stakeId: bigint; stakedHearts: bigint; daysLeft: bigint } | null>(null);
 
   const { stakes, stakeCount, currentDay, error, isLoading } = useSafeStakes(safeAddress, HEX_ADDRESS, publicClient);
 
@@ -235,7 +242,14 @@ export function SafeStakeList({
                       <Button
                         variant="contained"
                         size="small"
-                        onClick={() => handleEndStake(stake.contractIndex, stake.stakeId)}
+                        onClick={() => {
+                          if (isStakeTermDone) {
+                            handleEndStake(stake.contractIndex, stake.stakeId);
+                          } else {
+                            const daysLeft = (stake.lockedDay + stake.stakedDays + 1n) - currentDay;
+                            setEesWarning({ stakeIndex: stake.contractIndex, stakeId: stake.stakeId, stakedHearts: stake.stakedHearts, daysLeft });
+                          }
+                        }}
                         aria-label={`End stake with ID ${stake.stakeId}`}
                         sx={{
                           backgroundColor: isStakeTermDone ? "success.light" : "warning.main",
@@ -257,6 +271,77 @@ export function SafeStakeList({
           </TableBody>
         </Table>
       )}
+
+      {/* EES Warning Dialog */}
+      <Dialog
+        open={!!eesWarning}
+        onClose={() => setEesWarning(null)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogContent>
+          <Stack spacing={2} alignItems="center" sx={{ pt: 1 }}>
+            <WarningAmberIcon sx={{ fontSize: 48, color: 'warning.main' }} />
+            <Typography variant="h6" fontWeight="bold" textAlign="center">
+              Emergency End Stake
+            </Typography>
+            <Typography variant="body1" textAlign="center" color="text.secondary">
+              This stake has <strong>{eesWarning?.daysLeft.toString()} days remaining</strong> before maturity.
+            </Typography>
+            <Box sx={{ p: 2, borderRadius: '10px', bgcolor: 'error.main', opacity: 0.1, position: 'absolute' }} />
+            <Box sx={{
+              p: 2,
+              borderRadius: '10px',
+              border: '1px solid',
+              borderColor: 'error.main',
+              width: '100%',
+            }}>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                <strong>Emergency End Staking (EES) penalties:</strong>
+              </Typography>
+              <Typography variant="body2" component="div">
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>You will lose all accrued interest</li>
+                  <li>You may lose a portion of your principal — the earlier you end, the larger the penalty</li>
+                  <li>Stakes ended in the first half of their term can lose up to 50% of principal</li>
+                  <li>This action is irreversible once confirmed on-chain</li>
+                </ul>
+              </Typography>
+            </Box>
+            {eesWarning && (
+              <Typography variant="body2" color="text.secondary" textAlign="center">
+                Staked amount: <strong>{Number(formatUnits(eesWarning.stakedHearts, 8)).toLocaleString()} HEX</strong>
+              </Typography>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+          <Button
+            variant="outlined"
+            onClick={() => setEesWarning(null)}
+            fullWidth
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              if (eesWarning) {
+                handleEndStake(eesWarning.stakeIndex, eesWarning.stakeId);
+                setEesWarning(null);
+              }
+            }}
+            fullWidth
+            sx={{
+              backgroundColor: 'error.main',
+              '&:hover': { backgroundColor: 'error.dark' },
+              color: '#ffffff',
+            }}
+          >
+            I Understand, End Stake Early
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
