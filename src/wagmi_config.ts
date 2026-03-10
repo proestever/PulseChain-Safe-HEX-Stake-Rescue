@@ -4,10 +4,20 @@ import { mainnet, pulsechain } from 'wagmi/chains'
 
 const projectId = '86811378e80acfdf63c532c6e5cdcef0'
 
+const pulsechainWithIcon = {
+  ...pulsechain,
+  iconUrl: `${import.meta.env.BASE_URL}pulsechain-logo.svg`,
+}
+
+const mainnetWithIcon = {
+  ...mainnet,
+  iconUrl: `${import.meta.env.BASE_URL}ethereum-logo.svg`,
+}
+
 export const config = getDefaultConfig({
   appName: 'PulseChain Safe HEX Stake Rescue',
   projectId,
-  chains: [pulsechain, mainnet],
+  chains: [pulsechainWithIcon, mainnetWithIcon],
   transports: {
     [pulsechain.id]: fallback([
       http('https://rpc.pulsechain.com'),

@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { usePublicClient, useReadContracts } from "wagmi";
 import {
-  Card,
-  CardContent,
   Typography,
   CircularProgress,
   Alert,
@@ -54,9 +52,6 @@ interface UseSafeStakesResult {
   isLoading: boolean;
 }
 
-/**
- * Fetches and manages HEX stakes for a given Safe address.
- */
 function useSafeStakes(
   safeAddress: `0x${string}`,
   hexAddress: `0x${string}`,
@@ -150,9 +145,6 @@ function useSafeStakes(
   return { stakes, stakeCount, currentDay, error, isLoading: countLoading || listLoading || isLoading };
 }
 
-/**
- * Displays a list of HEX stakes for a Safe and allows ending them.
- */
 export function SafeStakeList({
   appendLog,
   setSelectedTxData,
@@ -202,72 +194,69 @@ export function SafeStakeList({
       <Typography variant="h6" gutterBottom>
         Safe HEX Stakes — HEX Current Day {currentDay + 1n}
       </Typography>
-      <Card variant="outlined">
-        <CardContent>
-          {isLoading && <CircularProgress size={20} />}
-          {error && <Alert severity="error">{error}</Alert>}
-          {stakeCount === 0n && !isLoading && !error && (
-            <Typography variant="body2" color="text.secondary">
-              No stakes found for this Safe.
-            </Typography>
-          )}
-          {stakes.length > 0 && (
-            <Table size="small" sx={{ "& .MuiTableCell-root": { py: 0.5 } }}>
-              <TableHead sx={{ "& .MuiTableCell-head": { fontWeight: "bold" } }}>
-                <TableRow>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Staked HEX</TableCell>
-                  <TableCell>TShares</TableCell>
-                  <TableCell>Locked Day</TableCell>
-                  <TableCell>Staked Days</TableCell>
-                  <TableCell>End Day</TableCell>
-                  <TableCell>Action</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {stakes
-                  .sort((a, b) => {
-                    const endA = a.lockedDay + a.stakedDays;
-                    const endB = b.lockedDay + b.stakedDays;
-                    return endA < endB ? -1 : endA > endB ? 1 : 0;
-                  })
-                  .map((stake) => {
-                    const isStakeTermDone = stake.lockedDay + stake.stakedDays + 1n <= currentDay;
-                    return (
-                      <TableRow key={stake.stakeId}>
-                        <TableCell>{stake.stakeId.toString()}</TableCell>
-                        <TableCell>{formatUnits(stake.stakedHearts, 8)}</TableCell>
-                        <TableCell>{Number(formatUnits(stake.stakeShares, 12)).toFixed(4)}</TableCell>
-                        <TableCell>{stake.lockedDay.toString()}</TableCell>
-                        <TableCell>{stake.stakedDays.toString()}</TableCell>
-                        <TableCell>{(stake.lockedDay + stake.stakedDays + 1n).toString()}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={() => handleEndStake(stake.contractIndex, stake.stakeId)}
-                            aria-label={`End stake with ID ${stake.stakeId}`}
-                            sx={{
-                              backgroundColor: isStakeTermDone ? "success.light" : "warning.main",
-                              color: isStakeTermDone ? "primary.contrastText" : "warning.contrastText",
-                              "&:hover": {
-                                backgroundColor: isStakeTermDone ? "success.dark" : "warning.dark",
-                              },
-                              fontWeight: !isStakeTermDone ? "bold" : "normal",
-                              border: !isStakeTermDone ? "1px solid" : "none",
-                              borderColor: !isStakeTermDone ? "error.main" : "transparent",
-                            }}
-                          >
-                            {isStakeTermDone ? "END" : "EES"}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );})}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      {isLoading && <CircularProgress size={20} />}
+      {error && <Alert severity="error">{error}</Alert>}
+      {stakeCount === 0n && !isLoading && !error && (
+        <Typography variant="body2" color="text.secondary">
+          No stakes found for this Safe.
+        </Typography>
+      )}
+      {stakes.length > 0 && (
+        <Table size="small" sx={{ "& .MuiTableCell-root": { py: 0.5 } }}>
+          <TableHead sx={{ "& .MuiTableCell-head": { fontWeight: "bold" } }}>
+            <TableRow>
+              <TableCell>ID</TableCell>
+              <TableCell>Staked HEX</TableCell>
+              <TableCell>TShares</TableCell>
+              <TableCell>Locked Day</TableCell>
+              <TableCell>Staked Days</TableCell>
+              <TableCell>End Day</TableCell>
+              <TableCell>Action</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {stakes
+              .sort((a, b) => {
+                const endA = a.lockedDay + a.stakedDays;
+                const endB = b.lockedDay + b.stakedDays;
+                return endA < endB ? -1 : endA > endB ? 1 : 0;
+              })
+              .map((stake) => {
+                const isStakeTermDone = stake.lockedDay + stake.stakedDays + 1n <= currentDay;
+                return (
+                  <TableRow key={stake.stakeId}>
+                    <TableCell>{stake.stakeId.toString()}</TableCell>
+                    <TableCell>{formatUnits(stake.stakedHearts, 8)}</TableCell>
+                    <TableCell>{Number(formatUnits(stake.stakeShares, 12)).toFixed(4)}</TableCell>
+                    <TableCell>{stake.lockedDay.toString()}</TableCell>
+                    <TableCell>{stake.stakedDays.toString()}</TableCell>
+                    <TableCell>{(stake.lockedDay + stake.stakedDays + 1n).toString()}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => handleEndStake(stake.contractIndex, stake.stakeId)}
+                        aria-label={`End stake with ID ${stake.stakeId}`}
+                        sx={{
+                          backgroundColor: isStakeTermDone ? "success.light" : "warning.main",
+                          color: isStakeTermDone ? "primary.contrastText" : "warning.contrastText",
+                          "&:hover": {
+                            backgroundColor: isStakeTermDone ? "success.dark" : "warning.dark",
+                          },
+                          fontWeight: !isStakeTermDone ? "bold" : "normal",
+                          border: !isStakeTermDone ? "1px solid" : "none",
+                          borderColor: !isStakeTermDone ? "error.main" : "transparent",
+                        }}
+                      >
+                        {isStakeTermDone ? "END" : "EES"}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+          </TableBody>
+        </Table>
+      )}
     </>
   );
 }

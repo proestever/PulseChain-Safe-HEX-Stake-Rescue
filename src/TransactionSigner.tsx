@@ -92,7 +92,9 @@ export function TransactionSigner({
   } = useCheckSignatures(safeAddress, publicClient, appendLog, safeVersion);
 
   const [shouldVerify, setShouldVerify] = useState(false);
-  const [useApproveHash, setUseApproveHash] = useState(false);
+  // Default to Approve Hash for v1.1.1 Safes (PulseChain/StakerApp), EIP-712 for v1.3.0+
+  const [useApproveHash, setUseApproveHash] = useState(true);
+  const [methodAutoSet, setMethodAutoSet] = useState(false);
   const [approveHashDone, setApproveHashDone] = useState(false);
   const { writeContract: writeApproveHash, data: approveHashTx, error: approveHashError, isPending: isApprovingHash } = useWriteContract();
   const { isSuccess: approveHashConfirmed } = useWaitForTransactionReceipt({ hash: approveHashTx });
@@ -161,6 +163,15 @@ export function TransactionSigner({
       );
     }
   }, [combinedSignatures, signatures, threshold, domainSeparator, safeTxHash, txData.data, checkSignatures, appendLog]);
+
+  // Auto-select signing method based on Safe version
+  useEffect(() => {
+    if (safeVersion && !methodAutoSet) {
+      setUseApproveHash(!isV130Plus);
+      setMethodAutoSet(true);
+      appendLog(`Safe version ${safeVersion} detected — defaulting to ${isV130Plus ? 'EIP-712' : 'Approve Hash'}`);
+    }
+  }, [safeVersion, isV130Plus, methodAutoSet, appendLog]);
 
   // chainInfo effect
   useEffect(() => {

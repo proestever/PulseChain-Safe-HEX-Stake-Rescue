@@ -7,6 +7,9 @@ export default defineConfig({
   ],
   base: '/PulseChain-Safe-HEX-Stake-Rescue/',
   optimizeDeps: { include: ['viem'] },
+  server: {
+    allowedHosts: true,
+  },
   preview: {
     allowedHosts: true,
   },

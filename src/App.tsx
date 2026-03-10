@@ -12,7 +12,6 @@ import {
   Button,
   Card,
   CardContent,
-  Collapse,
   IconButton,
   Autocomplete,
   TextField,
@@ -20,16 +19,37 @@ import {
   DialogContent,
   CircularProgress,
   Alert,
+  Menu,
+  MenuItem,
+  Divider,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import CloseIcon from "@mui/icons-material/Close";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import MenuIcon from "@mui/icons-material/Menu";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAccount, useChainId, useReadContract, usePublicClient } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { parseAbi, isAddress } from "viem";
 import { useSafeInfo } from "./useSafeInfo";
 import { useQueryClient } from "@tanstack/react-query";
+import { useColorMode } from "./ThemeContext";
 import About from "./About";
+import HowToUse from "./HowToUse";
+
+const BASE = import.meta.env.BASE_URL;
+
+const ChainLogo = ({ chainId }: { chainId?: number }) => (
+  <img
+    src={chainId === 369 ? `${BASE}pulsechain-logo.svg` : `${BASE}ethereum-logo.svg`}
+    alt={chainId === 369 ? "PulseChain" : "Ethereum"}
+    width={20}
+    height={20}
+    style={{ borderRadius: '50%' }}
+  />
+);
 
 interface SafeTxData {
   to: `0x${string}`;
@@ -44,14 +64,18 @@ interface SafeTxData {
   nonce: string;
 }
 
-// Type guard to validate parsed JSON as an array of valid addresses
 function isValidAddressArray(data: unknown): data is `0x${string}`[] {
   return Array.isArray(data) && data.every((item) => typeof item === "string" && isAddress(item));
 }
 
+type Page = "app" | "about" | "how-to-use";
+
 function App() {
-  const [logs, setLogs] = useState<string[]>([]);
-  const [isLogOpen, setIsLogOpen] = useState(false);
+  const { mode, toggle: toggleColorMode } = useColorMode();
+  const muiTheme = useTheme();
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const [page, setPage] = useState<Page>("app");
   const [selectedTxData, setSelectedTxData] = useState<SafeTxData | null>(null);
   const [txStatus, setTxStatus] = useState<{ isBroadcast: boolean; isConfirmed: boolean }>({
     isBroadcast: false,
@@ -88,13 +112,13 @@ function App() {
 
   const appendLog = useCallback((log: string) => {
     const timestamp = new Date().toISOString();
-    setLogs((prev) => [...prev, `${timestamp}: ${log}`]);
+    console.log(`[SafeRescue] ${timestamp}: ${log}`);
   }, []);
 
   useEffect(() => {
     if (safeAddress) {
       if (!safeAddresses.includes(safeAddress)) {
-        const updatedAddresses = [safeAddress, ...safeAddresses].slice(0, 10); // Limit to 10 addresses
+        const updatedAddresses = [safeAddress, ...safeAddresses].slice(0, 10);
         setSafeAddresses(updatedAddresses);
         localStorage.setItem("safeAddresses", JSON.stringify(updatedAddresses));
       }
@@ -167,11 +191,6 @@ function App() {
     void queryClient.invalidateQueries({ queryKey: ["safeInfo", safeAddress] });
   }, [queryClient, safeAddress, appendLog]);
 
-  const handleClearLogs = useCallback(() => {
-    setLogs([]);
-    appendLog("Debug logs cleared");
-  }, [appendLog]);
-
   const commitSafeAddress = useCallback(
     (value: `0x${string}` | "") => {
       setInputAddress(value);
@@ -193,253 +212,320 @@ function App() {
   }, [selectedTxData, appendLog]);
 
   return (
-    <Box minHeight="100vh" bgcolor="background.default">
-      <AppBar position="fixed" color="default" elevation={2}>
-        <Toolbar sx={{ justifyContent: "space-between" }}>
-          <Typography variant="h6" fontWeight="bold">
-            PulseChain Safe HEX Stake Rescue
-          </Typography>
-          <ConnectButton.Custom>
-            {({ account, chain, openConnectModal, openChainModal, mounted }) => {
-              if (!mounted) return null;
-              if (!account) {
-                return (
-                  <Button variant="contained" onClick={openConnectModal}>
-                    Connect Wallet
-                  </Button>
-                );
-              }
-              return (
-                <Box display="flex" gap={1}>
-                  <Button variant="outlined" onClick={openChainModal}>
-                    {chain?.name || "Unknown Chain"}
-                  </Button>
-                  <Button variant="contained" onClick={openConnectModal}>
-                    {account.displayName}
-                  </Button>
-                </Box>
-              );
-            }}
-          </ConnectButton.Custom>
+    <Box minHeight="100vh">
+      <AppBar position="fixed" elevation={0}>
+        <Toolbar sx={{ justifyContent: "space-between", gap: 1 }}>
+          {/* Logo + Title — always visible */}
+          <Box display="flex" alignItems="center" gap={1} sx={{ cursor: 'pointer', flexShrink: 0 }} onClick={() => setPage("app")}>
+            <img src={`${BASE}hex-logo.svg`} alt="HEX" height={28} style={{ objectFit: 'contain' }} />
+            <Typography
+              variant="h6"
+              fontWeight="bold"
+              sx={{ color: mode === 'dark' ? '#ffffff' : '#1a1a2e', whiteSpace: 'nowrap', display: { xs: 'none', sm: 'block' } }}
+            >
+              Safe Stake Rescue
+            </Typography>
+          </Box>
+
+          {/* Desktop nav */}
+          {!isMobile && (
+            <>
+              <Box display="flex" alignItems="center" gap={1}>
+                <Button
+                  variant={page === "how-to-use" ? "contained" : "outlined"}
+                  size="small"
+                  onClick={() => setPage(page === "how-to-use" ? "app" : "how-to-use")}
+                  sx={{ minWidth: 'auto', px: 2, fontSize: '0.8rem' }}
+                >
+                  How to Use
+                </Button>
+                <Button
+                  variant={page === "about" ? "contained" : "outlined"}
+                  size="small"
+                  onClick={() => setPage(page === "about" ? "app" : "about")}
+                  sx={{ minWidth: 'auto', px: 2, fontSize: '0.8rem' }}
+                >
+                  About
+                </Button>
+              </Box>
+              <Box display="flex" alignItems="center" gap={1}>
+                <IconButton onClick={toggleColorMode} size="small" sx={{ color: 'inherit' }}>
+                  {mode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
+                </IconButton>
+                <ConnectButton.Custom>
+                  {({ account, chain: connectedChain, openConnectModal, openChainModal, mounted }) => {
+                    if (!mounted) return null;
+                    if (!account) {
+                      return (
+                        <Button variant="contained" onClick={openConnectModal}>
+                          Connect Wallet
+                        </Button>
+                      );
+                    }
+                    return (
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Button
+                          variant="outlined"
+                          onClick={openChainModal}
+                          startIcon={<ChainLogo chainId={connectedChain?.id} />}
+                          sx={{ fontSize: '0.85rem' }}
+                        >
+                          {connectedChain?.name || "Unknown"}
+                        </Button>
+                        <Button variant="contained" onClick={openConnectModal} sx={{ fontSize: '0.85rem' }}>
+                          {account.displayName}
+                        </Button>
+                      </Box>
+                    );
+                  }}
+                </ConnectButton.Custom>
+              </Box>
+            </>
+          )}
+
+          {/* Mobile: wallet + hamburger */}
+          {isMobile && (
+            <Box display="flex" alignItems="center" gap={0.5}>
+              <ConnectButton.Custom>
+                {({ account, chain: connectedChain, openConnectModal, openChainModal, mounted }) => {
+                  if (!mounted) return null;
+                  if (!account) {
+                    return (
+                      <Button variant="contained" size="small" onClick={openConnectModal}>
+                        Connect
+                      </Button>
+                    );
+                  }
+                  return (
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <IconButton onClick={openChainModal} size="small" sx={{ color: 'inherit' }}>
+                        <ChainLogo chainId={connectedChain?.id} />
+                      </IconButton>
+                      <Button variant="contained" size="small" onClick={openConnectModal} sx={{ fontSize: '0.75rem', px: 1.5 }}>
+                        {account.displayName}
+                      </Button>
+                    </Box>
+                  );
+                }}
+              </ConnectButton.Custom>
+              <IconButton
+                onClick={(e) => setMenuAnchor(e.currentTarget)}
+                size="small"
+                sx={{ color: 'inherit' }}
+              >
+                <MenuIcon />
+              </IconButton>
+              <Menu
+                anchorEl={menuAnchor}
+                open={!!menuAnchor}
+                onClose={() => setMenuAnchor(null)}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      minWidth: 180,
+                      bgcolor: mode === 'dark' ? '#0a0a0f' : '#f0f1f3',
+                      backdropFilter: 'blur(20px)',
+                      border: mode === 'dark' ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.06)',
+                      borderRadius: '12px',
+                      mt: 1,
+                    },
+                  },
+                }}
+              >
+                <MenuItem onClick={() => { setPage("app"); setMenuAnchor(null); }}>
+                  Home
+                </MenuItem>
+                <MenuItem onClick={() => { setPage("how-to-use"); setMenuAnchor(null); }}>
+                  How to Use
+                </MenuItem>
+                <MenuItem onClick={() => { setPage("about"); setMenuAnchor(null); }}>
+                  About
+                </MenuItem>
+                <Divider />
+                <MenuItem onClick={() => { toggleColorMode(); setMenuAnchor(null); }}>
+                  {mode === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                </MenuItem>
+              </Menu>
+            </Box>
+          )}
         </Toolbar>
       </AppBar>
 
       <Container maxWidth="md" sx={{ pt: 12, pb: 4 }}>
-        {isConnected && (
-          <Alert
-            severity={chainId === 369 ? "success" : chainId === 1 ? "info" : "warning"}
-            sx={{ mt: 2, mb: 1 }}
-          >
-            {chainId === 369
-              ? "Connected to PulseChain — ready to rescue stakes"
-              : chainId === 1
-              ? "Connected to Ethereum — switch to PulseChain if you need PLS stakes"
-              : `Connected to chain ${chainId} — switch to PulseChain (369) or Ethereum (1)`}
-          </Alert>
-        )}
-        <Card elevation={3} sx={{ mt: 2 }}>
-          <CardContent>
-            <Box display="flex" alignItems="center" gap={2}>
-              <Autocomplete
-                options={safeAddresses}
-                value={inputAddress}
-                onChange={(_, value) => commitSafeAddress((value ?? "") as `0x${string}`)}
-                onInputChange={(_, value) => setInputAddress(value as `0x${string}` | "")}
-                onBlur={(event: React.FocusEvent<HTMLInputElement>) =>
-                  commitSafeAddress(event.target.value as `0x${string}` | "")
-                }
-                freeSolo
-                fullWidth
-                filterOptions={(options) => options}
-                renderOption={(props, option) => (
-                  <li {...props} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span>{option}</span>
-                    <IconButton
-                      size="small"
-                      onClick={(event) => {
-                        event.stopPropagation(); // Prevent Autocomplete selection
-                        const updatedAddresses = safeAddresses.filter((addr) => addr !== option);
-                        setSafeAddresses(updatedAddresses);
-                        localStorage.setItem("safeAddresses", JSON.stringify(updatedAddresses));
-                        appendLog(`Removed address from list: ${option}`);
-                      }}
-                      aria-label={`Remove address ${option}`}
-                    >
-                      <CloseIcon fontSize="small" />
-                    </IconButton>
-                  </li>
+        {page === "about" ? (
+          <About />
+        ) : page === "how-to-use" ? (
+          <HowToUse />
+        ) : (
+          <>
+            <Card sx={{ mt: 2 }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Autocomplete
+                    options={safeAddresses}
+                    value={inputAddress}
+                    onChange={(_, value) => commitSafeAddress((value ?? "") as `0x${string}`)}
+                    onInputChange={(_, value) => setInputAddress(value as `0x${string}` | "")}
+                    onBlur={(event: React.FocusEvent<HTMLInputElement>) =>
+                      commitSafeAddress(event.target.value as `0x${string}` | "")
+                    }
+                    freeSolo
+                    fullWidth
+                    filterOptions={(options) => options}
+                    renderOption={(props, option) => (
+                      <li {...props} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span>{option}</span>
+                        <IconButton
+                          size="small"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            const updatedAddresses = safeAddresses.filter((addr) => addr !== option);
+                            setSafeAddresses(updatedAddresses);
+                            localStorage.setItem("safeAddresses", JSON.stringify(updatedAddresses));
+                            appendLog(`Removed address from list: ${option}`);
+                          }}
+                          aria-label={`Remove address ${option}`}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </li>
+                    )}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Safe Address"
+                        variant="outlined"
+                        size="small"
+                        error={!!inputAddress && !isAddress(inputAddress)}
+                        helperText={!!inputAddress && !isAddress(inputAddress) ? "Invalid address format" : ""}
+                        sx={{ input: { fontFamily: "monospace" } }}
+                        onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
+                          if (event.key === "Enter") {
+                            commitSafeAddress(inputAddress);
+                            (event.target as HTMLInputElement).blur();
+                          }
+                        }}
+                      />
+                    )}
+                  />
+                  <Button
+                    variant="contained"
+                    onClick={() => commitSafeAddress(inputAddress)}
+                    disabled={!isAddress(inputAddress)}
+                    aria-label="Confirm Safe Address"
+                    sx={{ height: 40, minWidth: 48 }}
+                  >
+                    Go
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {isAddress(safeAddress) && (
+              <>
+                {isSafeLoading ? (
+                  <Card sx={{ mt: 4 }}>
+                    <CardContent>
+                      <Box display="flex" justifyContent="center" alignItems="center" minHeight={100}>
+                        <CircularProgress size={30} />
+                        <Typography variant="body1" sx={{ ml: 2 }}>
+                          Loading Safe information...
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ) : nonce !== null ? (
+                  <>
+                    <Card sx={{ mt: 4 }}>
+                      <CardContent>
+                        <SafeInfo
+                          appendLog={appendLog}
+                          owners={owners}
+                          threshold={threshold}
+                          balance={balance}
+                          hexBalance={hexBalance}
+                          error={safeError}
+                          isSafeLoading={isSafeLoading}
+                          isNativeBalanceLoading={isNativeBalanceLoading}
+                          isHexBalanceLoading={isHexBalanceLoading}
+                          isNotSafeContract={isNotSafeContract}
+                        />
+                      </CardContent>
+                    </Card>
+                    {typeof hexBalance === "bigint" && hexBalance > 0n && (
+                      <Card sx={{ mt: 4 }}>
+                        <CardContent>
+                          <HexTransferForm
+                            appendLog={appendLog}
+                            setSelectedTxData={setSelectedTxData}
+                            hexBalance={hexBalance}
+                            nonce={nonce}
+                            safeAddress={safeAddress}
+                          />
+                        </CardContent>
+                      </Card>
+                    )}
+                    {typeof balance === "bigint" && balance > 0n && (
+                      <Card sx={{ mt: 4 }}>
+                        <CardContent>
+                          <NativeTransferForm
+                            appendLog={appendLog}
+                            setSelectedTxData={setSelectedTxData}
+                            balance={balance}
+                            nonce={nonce}
+                            safeAddress={safeAddress}
+                            chainId={chainId}
+                          />
+                        </CardContent>
+                      </Card>
+                    )}
+                    <Card sx={{ mt: 4 }}>
+                      <CardContent>
+                        <SafeStakeList
+                          appendLog={appendLog}
+                          setSelectedTxData={setSelectedTxData}
+                          nonce={nonce}
+                          safeAddress={safeAddress}
+                        />
+                      </CardContent>
+                    </Card>
+                  </>
+                ) : (
+                  <Card sx={{ mt: 4 }}>
+                    <CardContent>
+                      <Typography color="error">Failed to fetch Safe nonce. Please check the Safe address.</Typography>
+                    </CardContent>
+                  </Card>
                 )}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Safe Address"
-                    variant="outlined"
-                    size="small"
-                    error={!!inputAddress && !isAddress(inputAddress)}
-                    helperText={!!inputAddress && !isAddress(inputAddress) ? "Invalid address format" : ""}
-                    sx={{ input: { fontFamily: "monospace" } }}
-                    onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
-                      if (event.key === "Enter") {
-                        commitSafeAddress(inputAddress);
-                        (event.target as HTMLInputElement).blur(); // Close the dropdown
-                      }
-                    }}
+              </>
+            )}
+            <Dialog
+              open={!!selectedTxData}
+              onClose={handleCloseTransaction}
+              maxWidth="md"
+              fullWidth
+            >
+              <DialogContent>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Typography variant="h6">Sign Transaction</Typography>
+                  <Button variant="outlined" color="error" onClick={handleCloseTransaction}>
+                    {txStatus.isBroadcast || txStatus.isConfirmed ? "Close" : "Cancel"}
+                  </Button>
+                </Box>
+                {selectedTxData && (
+                  <TransactionSigner
+                    appendLog={appendLog}
+                    txData={selectedTxData}
+                    safeAddress={safeAddress as `0x${string}`}
+                    onClose={handleCloseTransaction}
+                    onStatusChange={handleTransactionStatusChange}
+                    onTransactionConfirmed={handleTransactionConfirmed}
                   />
                 )}
-              />
-              <Button
-                variant="contained"
-                size="small"
-                onClick={() => commitSafeAddress(inputAddress)}
-                disabled={!isAddress(inputAddress)}
-                aria-label="Confirm Safe Address"
-              >
-                Go
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
-
-        {isAddress(safeAddress) && (
-          <>
-            {isSafeLoading ? (
-              <Card elevation={3} sx={{ mt: 4 }}>
-                <CardContent>
-                  <Box display="flex" justifyContent="center" alignItems="center" minHeight={100}>
-                    <CircularProgress size={30} />
-                    <Typography variant="body1" sx={{ ml: 2 }}>
-                      Loading Safe information...
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-            ) : nonce !== null ? (
-              <>
-                <Card elevation={3} sx={{ mt: 4 }}>
-                  <CardContent>
-                    <SafeInfo
-                      appendLog={appendLog}
-                      owners={owners}
-                      threshold={threshold}
-                      balance={balance}
-                      hexBalance={hexBalance}
-                      error={safeError}
-                      isSafeLoading={isSafeLoading}
-                      isNativeBalanceLoading={isNativeBalanceLoading}
-                      isHexBalanceLoading={isHexBalanceLoading}
-                      isNotSafeContract={isNotSafeContract}
-                    />
-                  </CardContent>
-                </Card>
-                {typeof hexBalance === "bigint" && hexBalance > 0n && (
-                  <Card elevation={3} sx={{ mt: 4 }}>
-                    <CardContent>
-                      <HexTransferForm
-                        appendLog={appendLog}
-                        setSelectedTxData={setSelectedTxData}
-                        hexBalance={hexBalance}
-                        nonce={nonce}
-                        safeAddress={safeAddress}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
-                {typeof balance === "bigint" && balance > 0n && (
-                  <Card elevation={3} sx={{ mt: 4 }}>
-                    <CardContent>
-                      <NativeTransferForm
-                        appendLog={appendLog}
-                        setSelectedTxData={setSelectedTxData}
-                        balance={balance}
-                        nonce={nonce}
-                        safeAddress={safeAddress}
-                        chainId={chainId}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
-                <Card elevation={3} sx={{ mt: 4 }}>
-                  <CardContent>
-                    <SafeStakeList
-                      appendLog={appendLog}
-                      setSelectedTxData={setSelectedTxData}
-                      nonce={nonce}
-                      safeAddress={safeAddress}
-                    />
-                  </CardContent>
-                </Card>
-              </>
-            ) : (
-              <Card elevation={3} sx={{ mt: 4 }}>
-                <CardContent>
-                  <Typography color="error">Failed to fetch Safe nonce. Please check the Safe address.</Typography>
-                </CardContent>
-              </Card>
-            )}
+              </DialogContent>
+            </Dialog>
           </>
         )}
-        <Dialog
-          open={!!selectedTxData}
-          onClose={handleCloseTransaction}
-          maxWidth="md"
-          fullWidth
-          sx={{ "& .MuiDialog-paper": { bgcolor: "background.default" } }}
-        >
-          <DialogContent>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h6">Sign Transaction</Typography>
-              <Button variant="outlined" color="error" onClick={handleCloseTransaction}>
-                {txStatus.isBroadcast || txStatus.isConfirmed ? "Close" : "Cancel"}
-              </Button>
-            </Box>
-            {selectedTxData && (
-              <TransactionSigner
-                appendLog={appendLog}
-                txData={selectedTxData}
-                safeAddress={safeAddress as `0x${string}`}
-                onClose={handleCloseTransaction}
-                onStatusChange={handleTransactionStatusChange}
-                onTransactionConfirmed={handleTransactionConfirmed}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
-        <About />
-        <Card elevation={3} sx={{ mt: 4 }}>
-          <Box display="flex" alignItems="center" justifyContent="space-between" px={2} py={1}>
-            <Typography variant="subtitle1" fontWeight="medium">
-              Debug Log
-            </Typography>
-            <IconButton onClick={() => setIsLogOpen(!isLogOpen)}>
-              <ExpandMoreIcon
-                sx={{
-                  transform: isLogOpen ? "rotate(180deg)" : "rotate(0deg)",
-                  transition: "transform 0.2s",
-                }}
-              />
-            </IconButton>
-          </Box>
-          <Collapse in={isLogOpen} timeout="auto" unmountOnExit>
-            <Box px={2} pb={2}>
-              <Button variant="outlined" onClick={handleClearLogs} sx={{ mb: 1 }}>
-                Clear Logs
-              </Button>
-              <TextField
-                multiline
-                minRows={10}
-                fullWidth
-                value={logs.join("\n")}
-                slotProps={{
-                  input: {
-                    readOnly: true,
-                    style: { fontFamily: "monospace", fontSize: 12 },
-                    ref: (input: HTMLTextAreaElement) => input?.scrollTo(0, input.scrollHeight),
-                  },
-                }}
-              />
-            </Box>
-          </Collapse>
-        </Card>
       </Container>
     </Box>
   );

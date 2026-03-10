@@ -1,18 +1,16 @@
 import {
-  Card,
-  CardContent,
-  List,
-  ListItem,
-  ListItemText,
   CircularProgress,
   Stack,
   Alert,
   Typography,
   Grid,
+  Box,
 } from "@mui/material";
 import { formatEther, formatUnits } from "viem";
 import { Fragment, useEffect } from "react";
 import { useChainId } from "wagmi";
+
+const BASE = import.meta.env.BASE_URL;
 
 interface SafeInfoProps {
   appendLog: (log: string) => void;
@@ -27,9 +25,6 @@ interface SafeInfoProps {
   isNotSafeContract: boolean;
 }
 
-/**
- * Displays information about a Gnosis Safe, including owners, threshold, and balances.
- */
 export function SafeInfo({
   appendLog,
   owners,
@@ -43,7 +38,8 @@ export function SafeInfo({
   isNotSafeContract,
 }: SafeInfoProps) {
   const chainId = useChainId();
-  const nativeCoinSymbol = chainId === 369 ? "PLS" : chainId === 1 ? "ETH" : "Native Coin";
+  const nativeCoinSymbol = chainId === 369 ? "PLS" : chainId === 1 ? "ETH" : "Native";
+  const nativeLogo = chainId === 369 ? `${BASE}pulsechain-logo.svg` : `${BASE}ethereum-logo.svg`;
 
   useEffect(() => {
     if (safeError) {
@@ -60,73 +56,66 @@ export function SafeInfo({
       {safeError && !isSafeLoading && !isNativeBalanceLoading && !isHexBalanceLoading && (
         <Alert severity="error">{safeError}</Alert>
       )}
-      <Card variant="outlined">
-        <CardContent>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, sm: 8, md: 7 }}>
-              <List dense sx={{ py: 0.5 }}>
-                <ListItem>
-                  <ListItemText
-                    primary={<Typography sx={{ fontWeight: "bold" }}>Owner{owners.length > 1 ? "s" : ""}</Typography>}
-                    secondary={
-                      <Typography sx={{ wordBreak: "break-word", fontFamily: "monospace", fontSize: "0.8em" }}>
-                        {isSafeLoading
-                          ? "Loading..."
-                          : isNotSafeContract
-                          ? "Not a Safe contract address"
-                          : owners.length
-                          ? owners.map((addr) => (
-                              <Fragment key={addr}>
-                                {addr} <br />
-                              </Fragment>
-                            ))
-                          : "No owners found"}
-                        {!isSafeLoading && !isNotSafeContract && threshold > 1 && (
-                          <Typography component="span" sx={{ fontWeight: "bold" }}>
-                            {threshold} signature{threshold > 1 ? "s" : ""} required
-                          </Typography>
-                        )}
-                      </Typography>
-                    }
-                  />
-                </ListItem>
-              </List>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4, md: 5 }}>
-              <List dense sx={{ py: 0.5 }}>
-                <ListItem>
-                  <ListItemText
-                    primary={<Typography sx={{ fontWeight: "bold" }}>Balance ({nativeCoinSymbol})</Typography>}
-                    secondary={
-                      <Typography sx={{ fontFamily: "monospace", fontSize: "0.8em" }}>
-                        {isNativeBalanceLoading
-                          ? "Loading..."
-                          : balance !== undefined
-                          ? Number(formatEther(balance))
-                          : "Failed to fetch"}
-                      </Typography>
-                    }
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemText
-                    primary={<Typography sx={{ fontWeight: "bold" }}>HEX Balance</Typography>}
-                    secondary={
-                      <Typography sx={{ fontFamily: "monospace", fontSize: "0.8em" }}>
-                        {isHexBalanceLoading
-                          ? "Loading..."
-                          : hexBalance !== undefined
-                          ? Number(formatUnits(hexBalance, 8))
-                          : "0.0000"}
-                      </Typography>
-                    }
-                  />
-                </ListItem>
-              </List>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+
+      <Grid container spacing={4}>
+        <Grid size={{ xs: 12, sm: 7 }}>
+          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.75rem' }}>
+            Owner{owners.length > 1 ? "s" : ""}
+            {!isSafeLoading && !isNotSafeContract && threshold > 1 && (
+              <Typography component="span" variant="subtitle2" color="text.secondary" sx={{ ml: 1 }}>
+                ({threshold} of {owners.length} required)
+              </Typography>
+            )}
+          </Typography>
+          <Typography sx={{ wordBreak: "break-word", fontFamily: "monospace", fontSize: "0.8em", lineHeight: 1.8 }}>
+            {isSafeLoading
+              ? "Loading..."
+              : isNotSafeContract
+              ? "Not a Safe contract address"
+              : owners.length
+              ? owners.map((addr) => (
+                  <Fragment key={addr}>
+                    {addr}<br />
+                  </Fragment>
+                ))
+              : "No owners found"}
+          </Typography>
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 5 }}>
+          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.75rem' }}>
+            Balances
+          </Typography>
+          <Stack spacing={1.5}>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Box display="flex" alignItems="center" gap={1}>
+                <img src={nativeLogo} alt={nativeCoinSymbol} width={22} height={22} style={{ borderRadius: '50%' }} />
+                <Typography fontWeight={600}>{nativeCoinSymbol}</Typography>
+              </Box>
+              <Typography sx={{ fontFamily: "monospace", fontSize: "0.9em" }}>
+                {isNativeBalanceLoading
+                  ? "..."
+                  : balance !== undefined
+                  ? Number(formatEther(balance)).toLocaleString(undefined, { maximumFractionDigits: 4 })
+                  : "—"}
+              </Typography>
+            </Box>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Box display="flex" alignItems="center" gap={1}>
+                <img src={`${BASE}hex-logo.svg`} alt="HEX" height={22} style={{ objectFit: 'contain' }} />
+                <Typography fontWeight={600}>HEX</Typography>
+              </Box>
+              <Typography sx={{ fontFamily: "monospace", fontSize: "0.9em" }}>
+                {isHexBalanceLoading
+                  ? "..."
+                  : hexBalance !== undefined
+                  ? Number(formatUnits(hexBalance, 8)).toLocaleString(undefined, { maximumFractionDigits: 4 })
+                  : "0.0000"}
+              </Typography>
+            </Box>
+          </Stack>
+        </Grid>
+      </Grid>
     </Stack>
   );
 }
