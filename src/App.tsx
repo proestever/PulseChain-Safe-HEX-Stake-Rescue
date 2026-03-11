@@ -350,14 +350,22 @@ function App() {
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="md" sx={{ pt: 12, pb: 4, px: { xs: 3, sm: 4 } }}>
+      <Container maxWidth="md" sx={{
+        pt: 12, pb: 4, px: { xs: 3, sm: 4 },
+        ...(page !== "about" && page !== "how-to-use" && !isAddress(safeAddress) ? {
+          minHeight: 'calc(100vh - 64px)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+        } : {})
+      }}>
         {page === "about" ? (
           <About />
         ) : page === "how-to-use" ? (
           <HowToUse />
         ) : (
           <>
-            <Card sx={{ mt: 2 }}>
+            <Card sx={{ mt: isAddress(safeAddress) ? 2 : 0 }}>
               <CardContent>
                 <Box display="flex" alignItems="center" gap={2}>
                   <Autocomplete
