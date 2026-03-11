@@ -39,5 +39,18 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.35.1",
     "vite": "^7.0.4"
-  }
+  },
+  "description": "A frontend dApp to help PulseChain and Ethereum users end HEX stakes locked in Gnosis Safe (StakerApp) wallets.",
+  "main": "eslint.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/proestever/PulseChain-Safe-HEX-Stake-Rescue.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/proestever/PulseChain-Safe-HEX-Stake-Rescue/issues"
+  },
+  "homepage": "https://github.com/proestever/PulseChain-Safe-HEX-Stake-Rescue#readme"
 }

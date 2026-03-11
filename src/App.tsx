@@ -216,7 +216,7 @@ function App() {
         <Toolbar sx={{ justifyContent: "space-between", gap: 1, px: { xs: 3, sm: 4 } }}>
           {/* Logo + Title — always visible */}
           <Box display="flex" alignItems="center" gap={1} sx={{ cursor: 'pointer', flexShrink: 0 }} onClick={() => setPage("app")}>
-            <img src={`${BASE}hex-logo.svg`} alt="HEX" height={28} style={{ objectFit: 'contain' }} />
+            <img src={`${BASE}safe-logo.png`} alt="Safe" height={32} style={{ objectFit: 'contain' }} />
             <Typography
               variant="h6"
               fontWeight="bold"
