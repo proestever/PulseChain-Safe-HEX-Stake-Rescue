@@ -213,7 +213,7 @@ function App() {
   return (
     <Box minHeight="100vh">
       <AppBar position="fixed" elevation={0}>
-        <Toolbar sx={{ justifyContent: "space-between", gap: 1 }}>
+        <Toolbar sx={{ justifyContent: "space-between", gap: 1, px: { xs: 3, sm: 4 } }}>
           {/* Logo + Title — always visible */}
           <Box display="flex" alignItems="center" gap={1} sx={{ cursor: 'pointer', flexShrink: 0 }} onClick={() => setPage("app")}>
             <img src={`${BASE}hex-logo.svg`} alt="HEX" height={28} style={{ objectFit: 'contain' }} />
@@ -350,7 +350,7 @@ function App() {
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="md" sx={{ pt: 12, pb: 4 }}>
+      <Container maxWidth="md" sx={{ pt: 12, pb: 4, px: { xs: 3, sm: 4 } }}>
         {page === "about" ? (
           <About />
         ) : page === "how-to-use" ? (
