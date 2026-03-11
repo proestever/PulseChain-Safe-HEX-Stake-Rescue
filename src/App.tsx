@@ -222,7 +222,7 @@ function App() {
               fontWeight="bold"
               sx={{ color: mode === 'dark' ? '#ffffff' : '#1a1a2e', whiteSpace: 'nowrap', display: { xs: 'none', sm: 'block' } }}
             >
-              Safe Stake Rescue
+              SAFE STAKE RESCUE
             </Typography>
           </Box>
 
